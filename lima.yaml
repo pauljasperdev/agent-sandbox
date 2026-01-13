@@ -1,0 +1,90 @@
+# Lima instance for isolated opencode workflows (Apple Silicon)
+# Usage:
+#   limactl start --name opencode ./lima.yaml
+#   limactl shell opencode
+#   limactl stop opencode
+#   limactl delete opencode
+
+minimumLimaVersion: 1.1.0
+
+vmType: vz
+arch: aarch64
+
+cpus: 4
+memory: "8GiB"
+disk: "40GiB"
+
+# Use Ubuntu 24.04 cloud image via Lima templates.
+base:
+  - template:_images/ubuntu-24.04
+
+# No host filesystem exposure.
+mounts: []
+
+# No container runtime.
+containerd:
+  system: false
+  user: false
+
+# Don’t inherit host DNS/VPN; use public DNS.
+hostResolver:
+  enabled: false
+dns:
+  - 1.1.1.1
+  - 8.8.8.8
+
+# Don’t leak host proxy env into guest.
+propagateProxyEnv: false
+
+# Don’t pull host SSH keys/agent into guest.
+ssh:
+  forwardAgent: false
+  loadDotSSHPubKeys: false
+
+# Keep port forwarding “off” (SSH port 22 is still used internally).
+portForwards:
+  - guestPortRange: [1, 21]
+    ignore: true
+  - guestPortRange: [23, 65535]
+    ignore: true
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+
+      apt-get update
+      apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        file \
+        build-essential \
+        procps
+
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+
+      brew_prefix="/home/linuxbrew/.linuxbrew"
+      brew_bin="${brew_prefix}/bin/brew"
+      shellenv_line='eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+
+      if ! [ -x "${brew_bin}" ]; then
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      fi
+
+      # Ensure Homebrew is on PATH for future interactive shells.
+      for rcfile in "${HOME}/.profile" "${HOME}/.bashrc" "${HOME}/.zprofile" "${HOME}/.zshrc"; do
+        mkdir -p "$(dirname "${rcfile}")"
+        touch "${rcfile}"
+        if ! grep -qxF "${shellenv_line}" "${rcfile}"; then
+          printf '\n%s\n' "${shellenv_line}" >> "${rcfile}"
+        fi
+      done
+
+      eval "$("${brew_bin}" shellenv)"
+      "${brew_bin}" install anomalyco/tap/opencode

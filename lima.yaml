@@ -1,9 +1,9 @@
-# Lima instance for isolated opencode workflows (Apple Silicon)
+# Lima instance for an isolated agent sandbox (Apple Silicon)
 # Usage:
-#   limactl start --name opencode ./lima.yaml
-#   limactl shell opencode
-#   limactl stop opencode
-#   limactl delete opencode
+#   limactl start --name agent-sandbox ./lima.yaml
+#   limactl shell agent-sandbox
+#   limactl stop agent-sandbox
+#   limactl delete agent-sandbox
 
 minimumLimaVersion: 1.1.0
 

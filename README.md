@@ -1,18 +1,18 @@
-# opencode Lima VM
+# Agent sandbox (Lima VM)
 
-Isolated Ubuntu VM (Lima) for running `opencode` workflows without mounting host directories.
+Isolated Ubuntu VM (Lima) for running agentic workflows (e.g. `opencode`) without mounting host directories.
 
 ## Prereqs
 - macOS + Lima (`limactl`) installed
 
 ## Create + start
 ```bash
-limactl start --name opencode ./lima.yaml
+limactl start --name agent-sandbox ./lima.yaml
 ```
 
 ## Enter the VM
 ```bash
-limactl shell opencode
+limactl shell agent-sandbox
 ```
 
 If `brew`/`opencode` aren’t found in your shell:
@@ -22,8 +22,8 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 ## Stop / delete
 ```bash
-limactl stop opencode
-limactl delete opencode
+limactl stop agent-sandbox
+limactl delete agent-sandbox
 ```
 
 ## Notes

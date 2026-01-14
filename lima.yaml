@@ -18,7 +18,7 @@ disk: "40GiB"
 base:
   - template:_images/ubuntu-24.04
 
-# No host filesystem exposure.
+# No host filesystem exposure (explicitly disable mounts)
 mounts: []
 
 # No container runtime.
@@ -63,6 +63,9 @@ provision:
         file \
         build-essential \
         procps
+
+      # Install uv (Python toolchain)
+      curl -LsSf https://astral.sh/uv/install.sh | sh
 
   - mode: user
     script: |

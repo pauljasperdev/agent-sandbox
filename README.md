@@ -5,9 +5,12 @@ Isolated Ubuntu VM (Lima) for running agentic workflows (e.g. `opencode`) withou
 ## Prereqs
 - macOS + Lima (`limactl`) installed
 
-## Create + start
+## Create + start (recommended)
+
+Use `start.sh` to create (or reuse) the VM and copy a repo into it:
+
 ```bash
-limactl start --name agent-sandbox ./lima.yaml
+./start.sh --lima-file ./lima.yaml --src-dir .
 ```
 
 ## Enter the VM
@@ -26,27 +29,49 @@ limactl stop agent-sandbox
 limactl delete agent-sandbox
 ```
 
-## File exchange (copy in / copy out)
+## Repo sync into the VM
 
-This VM intentionally has **no host mounts** and **no SSH keys**. Use `limactl copy` to move data in and out.
+This VM intentionally has **no host mounts** and **no SSH keys**. All data transfer is explicit.
 
-### Copy files into the VM
-```bash
-# From host
-tar -czf input.tar.gz workdir
-limactl copy input.tar.gz agent-sandbox:/tmp/input.tar.gz
-limactl shell agent-sandbox -- mkdir -p /workspace/input
-limactl shell agent-sandbox -- tar -xzf /tmp/input.tar.gz -C /workspace/input
+`start.sh` packages a repo on the host and copies it into the VM at:
+
+```text
+/workspace/repo
 ```
 
-### Copy Git identity (for correct commit author)
-The VM does **not** inherit host Git config automatically. To ensure commits have the correct author, explicitly copy your Git config:
+The copy:
+- Includes `.git/` so you can commit inside the VM
+- Includes uncommitted files
+- Respects `.limaignore` (or falls back to `.gitignore`)
+
+### `.limaignore`
+
+Create a `.limaignore` file at the repo root to control what is copied into the VM (syntax matches `.gitignore`).
+
+You can also override this explicitly:
 
 ```bash
-# From host
-limactl shell agent-sandbox -- mkdir -p ~/.config/git
-limactl copy ~/.config/git/config agent-sandbox:~/.config/git/config
+./start.sh --lima-file ./lima.yaml --src-dir . --ignore-file path/to/ignore
 ```
+
+```gitignore
+node_modules/
+dist/
+.env
+*.log
+```
+
+### Git identity (commits inside VM)
+
+The VM does **not** inherit host Git config automatically.
+
+`start.sh` will automatically copy your Git identity if it exists at:
+
+```text
+~/.config/git/config
+```
+
+You can also copy it manually:
 
 Verify inside the VM:
 ```bash

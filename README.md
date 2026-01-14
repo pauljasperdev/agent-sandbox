@@ -30,3 +30,6 @@ limactl delete agent-sandbox
 - No host mounts (`mounts: []`); use GitHub for file exchange.
 - Port forwarding is disabled for all ports except SSH.
 - Updating `lima.yaml` does not change an existing instance config; recreate the instance to apply provisioning changes.
+
+## License
+MIT (see `LICENSE`).

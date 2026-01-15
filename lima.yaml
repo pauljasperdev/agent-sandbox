@@ -91,3 +91,6 @@ provision:
 
       eval "$("${brew_bin}" shellenv)"
       "${brew_bin}" install anomalyco/tap/opencode
+
+      # Install Claude Code
+      curl -fsSL https://claude.ai/install.sh | bash

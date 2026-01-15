@@ -47,7 +47,7 @@ if [ ! -d "$SRC_DIR" ]; then
 fi
 
 # Start VM if not running
-if ! limactl list | grep -q "^${VM_NAME}"; then
+if ! limactl list -q --tty=false | grep -q "^${VM_NAME}$"; then
   echo "[host] Creating Lima VM: $VM_NAME"
   limactl start --name "$VM_NAME" "$LIMA_FILE"
 else

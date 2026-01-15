@@ -10,6 +10,11 @@ minimumLimaVersion: 1.1.0
 vmType: vz
 arch: aarch64
 
+# Set consistent VM username.
+user:
+  name: lima
+  home: /home/lima
+
 cpus: 4
 memory: "8GiB"
 disk: "40GiB"
@@ -91,6 +96,8 @@ provision:
 
       eval "$("${brew_bin}" shellenv)"
       "${brew_bin}" install anomalyco/tap/opencode
+      "${brew_bin}" install node pnpm bun
 
       # Install Claude Code
       curl -fsSL https://claude.ai/install.sh | bash
+      npx get-shit-done-cc

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 VM_NAME="agent-sandbox"
-VM_USER="ubuntu"
+VM_USER="lima"
 LIMA_FILE=""
 SRC_DIR=""
 WORKSPACE_DIR=""
@@ -76,7 +76,7 @@ fi
 # Package staged repo
 echo "[host] Packaging repository"
 TAR_PATH="$(mktemp)"
-tar -czf "$TAR_PATH" -C "$STAGING_DIR" .
+tar --no-xattrs --no-mac-metadata -czf "$TAR_PATH" -C "$STAGING_DIR" .
 
 # Copy into VM
 echo "[host] Copying repository into VM"

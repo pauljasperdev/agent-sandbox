@@ -2,13 +2,15 @@
 set -euo pipefail
 
 VM_NAME="agent-sandbox"
+VM_USER="ubuntu"
 LIMA_FILE=""
 SRC_DIR=""
+WORKSPACE_DIR=""
 INPUT_TAR="/tmp/input.tar.gz"
 STAGING_DIR=""
 
 usage() {
-  echo "Usage: $0 --lima-file <lima.yaml> [--src-dir <repo-dir>] [--ignore-file <path>] [--vm <name>]"
+  echo "Usage: $0 --lima-file <lima.yaml> [--src-dir <repo-dir>] [--ignore-file <path>] [--workspace-dir <path>] [--name <name>]"
   exit 1
 }
 
@@ -21,7 +23,9 @@ while [[ $# -gt 0 ]]; do
       SRC_DIR="$2"; shift 2 ;;
     --ignore-file)
       IGNORE_FILE_OVERRIDE="$2"; shift 2 ;;
-    --vm)
+    --workspace-dir)
+      WORKSPACE_DIR="$2"; shift 2 ;;
+    --name)
       VM_NAME="$2"; shift 2 ;;
     *)
       usage ;;
@@ -30,6 +34,7 @@ done
 
 [[ -z "$LIMA_FILE" ]] && usage
 [[ -z "$SRC_DIR" ]] && SRC_DIR="$(pwd)"
+[[ -z "$WORKSPACE_DIR" ]] && WORKSPACE_DIR="/home/${VM_USER}"
 
 if [ ! -f "$LIMA_FILE" ]; then
   echo "Missing lima file: $LIMA_FILE"
@@ -76,9 +81,9 @@ tar -czf "$TAR_PATH" -C "$STAGING_DIR" .
 # Copy into VM
 echo "[host] Copying repository into VM"
 limactl copy "$TAR_PATH" "$VM_NAME:$INPUT_TAR"
-limactl shell "$VM_NAME" -- rm -rf /workspace/repo
-limactl shell "$VM_NAME" -- mkdir -p /workspace/repo
-limactl shell "$VM_NAME" -- tar -xzf "$INPUT_TAR" -C /workspace/repo
+limactl shell "$VM_NAME" -- rm -rf "${WORKSPACE_DIR}/repo"
+limactl shell "$VM_NAME" -- mkdir -p "${WORKSPACE_DIR}/repo"
+limactl shell "$VM_NAME" -- tar -xzf "$INPUT_TAR" -C "${WORKSPACE_DIR}/repo"
 
 # Cleanup
 rm -rf "$STAGING_DIR" "$TAR_PATH"
@@ -87,8 +92,8 @@ rm -rf "$STAGING_DIR" "$TAR_PATH"
 HOST_GIT_CONFIG="$HOME/.config/git/config"
 if [ -f "$HOST_GIT_CONFIG" ]; then
   echo "[host] Copying git config for commit identity"
-  limactl shell "$VM_NAME" -- mkdir -p ~/.config/git
-  limactl copy "$HOST_GIT_CONFIG" "$VM_NAME:~/.config/git/config"
+  limactl shell "$VM_NAME" -- mkdir -p "/home/${VM_USER}/.config/git"
+  limactl copy "$HOST_GIT_CONFIG" "$VM_NAME:/home/${VM_USER}/.config/git/config"
 else
   echo "[host] No git config found at ~/.config/git/config (skipping)"
 fi

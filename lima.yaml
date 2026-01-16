@@ -67,7 +67,9 @@ provision:
         git \
         file \
         build-essential \
-        procps
+        procps \
+        jq \
+        openssl
 
       # Install uv (Python toolchain)
       curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -96,8 +98,16 @@ provision:
 
       eval "$("${brew_bin}" shellenv)"
       "${brew_bin}" install anomalyco/tap/opencode
-      "${brew_bin}" install node pnpm bun
+      "${brew_bin}" install node pnpm
+      "${brew_bin}" install oven-sh/bun/bun
+
+      gsd_dir="${HOME}/.local/share/get-shit-done"
+      if [ ! -d "${gsd_dir}/.git" ]; then
+        git clone https://github.com/glittercowboy/get-shit-done.git "${gsd_dir}"
+      else
+        git -C "${gsd_dir}" pull --ff-only
+      fi
+      node "${gsd_dir}/bin/install.js" --global
 
       # Install Claude Code
       curl -fsSL https://claude.ai/install.sh | bash
-      npx get-shit-done-cc

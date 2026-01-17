@@ -8,9 +8,10 @@ SRC_DIR=""
 WORKSPACE_DIR=""
 INPUT_TAR="/tmp/input.tar.gz"
 STAGING_DIR=""
+ENTER_VM=1
 
 usage() {
-  echo "Usage: $0 --lima-file <lima.yaml> [--src-dir <repo-dir>] [--ignore-file <path>] [--workspace-dir <path>] [--name <name>]"
+  echo "Usage: $0 --lima-file <lima.yaml> [--src-dir <repo-dir>] [--ignore-file <path>] [--workspace-dir <path>] [--name <name>] [--no-enter]"
   exit 1
 }
 
@@ -27,6 +28,8 @@ while [[ $# -gt 0 ]]; do
       WORKSPACE_DIR="$2"; shift 2 ;;
     --name)
       VM_NAME="$2"; shift 2 ;;
+    --no-enter)
+      ENTER_VM=0; shift ;;
     *)
       usage ;;
   esac
@@ -49,7 +52,7 @@ fi
 # Start VM if not running
 if ! limactl list -q --tty=false | grep -q "^${VM_NAME}$"; then
   echo "[host] Creating Lima VM: $VM_NAME"
-  limactl start --name "$VM_NAME" "$LIMA_FILE"
+  limactl start -y --progress --name "$VM_NAME" "$LIMA_FILE"
 else
   echo "[host] Lima VM already exists: $VM_NAME"
 fi
@@ -85,18 +88,17 @@ limactl shell "$VM_NAME" -- rm -rf "${WORKSPACE_DIR}/repo"
 limactl shell "$VM_NAME" -- mkdir -p "${WORKSPACE_DIR}/repo"
 limactl shell "$VM_NAME" -- tar -xzf "$INPUT_TAR" -C "${WORKSPACE_DIR}/repo"
 
+
 # Cleanup
 rm -rf "$STAGING_DIR" "$TAR_PATH"
 
-# Copy Git identity config if present
-HOST_GIT_CONFIG="$HOME/.config/git/config"
-if [ -f "$HOST_GIT_CONFIG" ]; then
-  echo "[host] Copying git config for commit identity"
-  limactl shell "$VM_NAME" -- mkdir -p "/home/${VM_USER}/.config/git"
-  limactl copy "$HOST_GIT_CONFIG" "$VM_NAME:/home/${VM_USER}/.config/git/config"
-else
-  echo "[host] No git config found at ~/.config/git/config (skipping)"
-fi
+# Git identity is provisioned via dotfiles in the VM.
 
 echo "[host] Sandbox ready"
-echo "Enter with: limactl shell $VM_NAME"
+
+if [ "$ENTER_VM" -eq 1 ]; then
+  limactl shell --workdir "${WORKSPACE_DIR}/repo" "$VM_NAME" -- \
+    bash -lc 'if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; fi; if command -v zsh >/dev/null 2>&1; then exec zsh -l; fi; exec bash -l'
+else
+  echo "Enter with: limactl shell $VM_NAME"
+fi

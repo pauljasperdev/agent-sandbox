@@ -16,11 +16,15 @@ Use `start.sh` to create (or reuse) the VM and copy a repo into it:
 
 ## Enter the VM
 
+`start.sh` drops you into the copied repo automatically. If you want to skip that (e.g. for CI), pass `--no-enter`.
+
+Manual entry:
+
 ```bash
 limactl shell agent-sandbox
 ```
 
-If `brew`/`opencode` aren’t found in your shell:
+If you need Homebrew tools on `PATH` in a plain bash shell:
 
 ```bash
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
@@ -40,7 +44,7 @@ This VM intentionally has **no host mounts** and **no SSH keys**. All data trans
 `start.sh` packages a repo on the host and copies it into the VM at:
 
 ```text
-/workspace/repo
+/home/lima/repo
 ```
 
 The copy:
@@ -68,15 +72,7 @@ dist/
 
 ### Git identity (commits inside VM)
 
-The VM does **not** inherit host Git config automatically.
-
-`start.sh` will automatically copy your Git identity if it exists at:
-
-```text
-~/.config/git/confi
-```
-
-You can also copy it manually:
+Git identity and shell tooling are provisioned inside the VM via your dotfiles bootstrap (runs from `lima.yaml`).
 
 Verify inside the VM:
 

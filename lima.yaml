@@ -60,54 +60,45 @@ provision:
       set -euxo pipefail
       export DEBIAN_FRONTEND=noninteractive
 
+      # Minimal bootstrap prerequisites.
+      # Everything else is installed via dotfiles bootstrap.
       apt-get update
       apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         git \
-        file \
-        build-essential \
-        procps \
-        jq \
-        openssl
+        rsync \
+        sudo
 
-      # Install uv (Python toolchain)
-      curl -LsSf https://astral.sh/uv/install.sh | sh
+      # Ensure provisioning never hangs on sudo prompts.
+      install -m 0440 /dev/stdin /etc/sudoers.d/99-lima-nopasswd <<'EOF'
+      lima ALL=(ALL) NOPASSWD:ALL
+      EOF
 
   - mode: user
     script: |
       #!/bin/bash
       set -euxo pipefail
 
-      brew_prefix="/home/linuxbrew/.linuxbrew"
-      brew_bin="${brew_prefix}/bin/brew"
-      shellenv_line='eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+      dotfiles_repo="https://github.com/pauljasperdev/dotfiles"
+      dotfiles_dir="${HOME}/.dotfiles"
 
-      if ! [ -x "${brew_bin}" ]; then
-        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      if [ ! -d "${dotfiles_dir}/.git" ]; then
+        git clone "${dotfiles_repo}" "${dotfiles_dir}"
       fi
 
-      # Ensure Homebrew is on PATH for future interactive shells.
-      for rcfile in "${HOME}/.profile" "${HOME}/.bashrc" "${HOME}/.zprofile" "${HOME}/.zshrc"; do
-        mkdir -p "$(dirname "${rcfile}")"
-        touch "${rcfile}"
-        if ! grep -qxF "${shellenv_line}" "${rcfile}"; then
-          printf '\n%s\n' "${shellenv_line}" >> "${rcfile}"
+      # Converts the clone to git-dir-only style (per dotfiles AGENTS.md).
+      "${dotfiles_dir}/.bootstrap.move.sh"
+
+      # Installs apt prereqs + Homebrew bundle deps.
+      # Ensure fully non-interactive install.
+      NONINTERACTIVE=1 "${HOME}/.bootstrap.debian.sh"
+
+      # Make Homebrew zsh the default login shell (so `limactl shell` lands in zsh).
+      brew_zsh="/home/linuxbrew/.linuxbrew/bin/zsh"
+      if [ -x "${brew_zsh}" ]; then
+        if ! grep -qxF "${brew_zsh}" /etc/shells; then
+          printf '%s\n' "${brew_zsh}" | sudo tee -a /etc/shells >/dev/null
         fi
-      done
-
-      eval "$("${brew_bin}" shellenv)"
-      "${brew_bin}" install anomalyco/tap/opencode
-      "${brew_bin}" install node pnpm
-      "${brew_bin}" install oven-sh/bun/bun
-
-      gsd_dir="${HOME}/.local/share/get-shit-done"
-      if [ ! -d "${gsd_dir}/.git" ]; then
-        git clone https://github.com/glittercowboy/get-shit-done.git "${gsd_dir}"
-      else
-        git -C "${gsd_dir}" pull --ff-only
+        sudo usermod --shell "${brew_zsh}" "${USER}" || true
       fi
-      node "${gsd_dir}/bin/install.js" --global
-
-      # Install Claude Code
-      curl -fsSL https://claude.ai/install.sh | bash

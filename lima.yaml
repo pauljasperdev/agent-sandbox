@@ -94,6 +94,10 @@ provision:
       # Ensure fully non-interactive install.
       NONINTERACTIVE=1 "${HOME}/.bootstrap.debian.sh"
 
+      # Ensure docker group exists and lima can access the daemon.
+      sudo groupadd -f docker
+      sudo usermod -aG docker "${USER}"
+
       # Make Homebrew zsh the default login shell (so `limactl shell` lands in zsh).
       brew_zsh="/home/linuxbrew/.linuxbrew/bin/zsh"
       if [ -x "${brew_zsh}" ]; then

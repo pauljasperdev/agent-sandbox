@@ -87,11 +87,18 @@ git config --get user.email
 limactl shell agent-sandbox -- opencode run
 ```
 
-### Copy results out of the VM
+### Copy repo out of the VM
+
+Use `./copy-out.sh` to extract the VM repo onto the host (defaults to `~/dev/lima-repo`, replacing any existing folder):
 
 ```bash
-limactl shell agent-sandbox -- tar -czf /tmp/output.tar.gz -C /workspace/output .
-limactl copy agent-sandbox:/tmp/output.tar.gz .
+./copy-out.sh --name agent-sandbox
+```
+
+Override destination and output folder name:
+
+```bash
+./copy-out.sh --dest-dir ~/dev --out-name gemhog-repo
 ```
 
 ## Notes

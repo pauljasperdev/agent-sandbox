@@ -75,6 +75,33 @@ provision:
       lima ALL=(ALL) NOPASSWD:ALL
       EOF
 
+      # Ensure docker group exists and lima can access the daemon before login.
+      groupadd -f docker
+      usermod -aG docker lima
+
+      # Refresh docker group membership for first login shells.
+      install -m 0644 /dev/stdin /etc/profile.d/docker-group.sh <<'EOF'
+      if [ -n "${PS1-}" ] && [ -z "${DOCKER_GROUP_REFRESHED-}" ]; then
+        if command -v id >/dev/null 2>&1 && command -v getent >/dev/null 2>&1; then
+          if ! id -nG | tr ' ' '\n' | grep -qx docker; then
+            if getent group docker | grep -qw "${USER}"; then
+              export DOCKER_GROUP_REFRESHED=1
+              exec newgrp docker
+            fi
+          fi
+        fi
+      fi
+      EOF
+
+      # Ensure zsh login shells source /etc/profile.d scripts.
+      if [ ! -f /etc/zprofile ]; then
+        install -m 0644 /dev/stdin /etc/zprofile <<'EOF'
+      if [ -f /etc/profile ]; then
+        . /etc/profile
+      fi
+      EOF
+      fi
+
   - mode: user
     script: |
       #!/bin/bash

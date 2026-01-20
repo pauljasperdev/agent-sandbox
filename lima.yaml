@@ -16,7 +16,7 @@ user:
   home: /home/lima
 
 cpus: 4
-memory: "8GiB"
+memory: "16GiB"
 disk: "40GiB"
 
 # Use Ubuntu 24.04 cloud image via Lima templates.
@@ -97,6 +97,20 @@ provision:
       # Ensure docker group exists and lima can access the daemon.
       sudo groupadd -f docker
       sudo usermod -aG docker "${USER}"
+
+      # Ensure an 8GiB swapfile is configured.
+      swapfile="/swapfile"
+      if ! sudo swapon --show | awk '{print $1}' | grep -qx "${swapfile}"; then
+        if [ ! -f "${swapfile}" ]; then
+          sudo fallocate -l 8G "${swapfile}"
+          sudo chmod 600 "${swapfile}"
+          sudo mkswap "${swapfile}"
+        fi
+        sudo swapon "${swapfile}"
+      fi
+      if ! grep -qxF "${swapfile} none swap sw 0 0" /etc/fstab; then
+        echo "${swapfile} none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
+      fi
 
       # Make Homebrew zsh the default login shell (so `limactl shell` lands in zsh).
       brew_zsh="/home/linuxbrew/.linuxbrew/bin/zsh"

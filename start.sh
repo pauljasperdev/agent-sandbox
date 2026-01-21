@@ -57,40 +57,18 @@ else
   echo "[host] Lima VM already exists: $VM_NAME"
 fi
 
-# Stage repo respecting ignore rules
-STAGING_DIR="$(mktemp -d)"
-IGNORE_FILE=""
+# Copy repository into VM
+COPY_IN_ARGS=(
+  --src-dir "$SRC_DIR"
+  --workspace-dir "$WORKSPACE_DIR"
+  --name "$VM_NAME"
+)
 
 if [ -n "${IGNORE_FILE_OVERRIDE:-}" ]; then
-  IGNORE_FILE="$IGNORE_FILE_OVERRIDE"
-elif [ -f "$SRC_DIR/.limaignore" ]; then
-  IGNORE_FILE="$SRC_DIR/.limaignore"
-elif [ -f "$SRC_DIR/.gitignore" ]; then
-  IGNORE_FILE="$SRC_DIR/.gitignore"
+  COPY_IN_ARGS+=(--ignore-file "$IGNORE_FILE_OVERRIDE")
 fi
 
-echo "[host] Staging repository"
-if [ -n "$IGNORE_FILE" ]; then
-  rsync -a --delete --exclude-from="$IGNORE_FILE" "$SRC_DIR/" "$STAGING_DIR/"
-else
-  rsync -a --delete "$SRC_DIR/" "$STAGING_DIR/"
-fi
-
-# Package staged repo
-echo "[host] Packaging repository"
-TAR_PATH="$(mktemp)"
-tar --no-xattrs --no-mac-metadata -czf "$TAR_PATH" -C "$STAGING_DIR" .
-
-# Copy into VM
-echo "[host] Copying repository into VM"
-limactl copy "$TAR_PATH" "$VM_NAME:$INPUT_TAR"
-limactl shell "$VM_NAME" -- rm -rf "${WORKSPACE_DIR}/repo"
-limactl shell "$VM_NAME" -- mkdir -p "${WORKSPACE_DIR}/repo"
-limactl shell "$VM_NAME" -- tar -xzf "$INPUT_TAR" -C "${WORKSPACE_DIR}/repo"
-
-
-# Cleanup
-rm -rf "$STAGING_DIR" "$TAR_PATH"
+"$(dirname "$0")/copy-in.sh" "${COPY_IN_ARGS[@]}"
 
 # Git identity is provisioned via dotfiles in the VM.
 

@@ -51,13 +51,12 @@ The copy:
 
 - Includes `.git/` so you can commit inside the VM
 - Includes uncommitted files
-- Respects `.limaignore` (or falls back to `.gitignore`)
+- Copies everything by default
+- Optionally excludes files via `--ignore-file`
 
-### `.limaignore`
+### Ignore file (optional)
 
-Create a `.limaignore` file at the repo root to control what is copied into the VM (syntax matches `.gitignore`).
-
-You can also override this explicitly:
+By default, the repo copy includes everything. To exclude files, pass an explicit ignore file (syntax matches `.gitignore`):
 
 ```bash
 ./start.sh --lima-file ./lima.yaml --src-dir . --ignore-file path/to/ignore

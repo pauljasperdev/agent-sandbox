@@ -139,6 +139,16 @@ provision:
         echo "${swapfile} none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
       fi
 
+      # Ensure Homebrew binaries are on PATH for login shells.
+      brew_prefix="/home/linuxbrew/.linuxbrew"
+      if [ -x "${brew_prefix}/bin/brew" ]; then
+        install -m 0644 /dev/stdin /tmp/homebrew-path.sh <<'EOF'
+      export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+      EOF
+        sudo mv /tmp/homebrew-path.sh /etc/profile.d/homebrew-path.sh
+        sudo chmod 0644 /etc/profile.d/homebrew-path.sh
+      fi
+
       # Make Homebrew zsh the default login shell (so `limactl shell` lands in zsh).
       brew_zsh="/home/linuxbrew/.linuxbrew/bin/zsh"
       if [ -x "${brew_zsh}" ]; then
